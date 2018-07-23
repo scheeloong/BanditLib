@@ -9,6 +9,7 @@ import argparse
 from sklearn.decomposition import TruncatedSVD
 from sklearn import cluster
 from sklearn.decomposition import PCA
+
 # local address to save simulated users, simulated articles, and results
 from conf import sim_files_folder, save_address
 from util_functions import featureUniform, gaussianFeature
@@ -24,16 +25,17 @@ from lib.PTS import PTSAlgorithm
 from lib.UCBPMF import UCBPMFAlgorithm
 from lib.GOBLin import GOBLinAlgorithm
 
-
 class simulateOnlineData(object):
+    '''
+    '''
     def __init__(self,
                  context_dimension,
                  latent_dimension,
                  training_iterations,
                  testing_iterations,
-                 testing_method,
-                 plot,
-                 articles,
+                 testing_method, # batch or online
+                 plot, # Plot results if true
+                 articles, # Contains all the articles
                  users,
                  batchSize=1000,
                  noise=lambda: 0,
@@ -147,7 +149,7 @@ class simulateOnlineData(object):
             Theta.T[i] = self.users[i].theta
         return Theta
 
-    def generateUserFeature(self, W):
+    def generateUserFeature(self, W, numComponents=20):
         svd = TruncatedSVD(n_components=20)
         result = svd.fit(W).transform(W)
         return result
@@ -503,7 +505,7 @@ if __name__ == '__main__':
     if args.contextdim:
         context_dimension = args.contextdim
     else:
-        context_dimension = 20
+        context_dimension = 10
     if args.hiddendim:
         latent_dimension = args.hiddendim
     else:
@@ -530,7 +532,7 @@ if __name__ == '__main__':
 
     # Matrix parameters
     matrixNoise = 0.01
-    sparseLevel = n_users  # if smaller or equal to 0 or larger or enqual to usernum, matrix is fully connected
+    sparseLevel = n_users  # if smaller or equal to 0 or larger or equal to usernum, matrix is fully connected
 
     # Parameters for GOBLin
     G_alpha = alpha
@@ -550,8 +552,9 @@ if __name__ == '__main__':
         UserGroups=UserGroups,
         thetaFunc=featureUniform,
         argv={'l2_limit': 1})
-    # users = UM.simulateThetafromUsers()
-    # UM.saveUsers(users, userFilename, force = False)
+    users = UM.simulateThetafromUsers()
+    #UM.saveUsers(users, userFilename, force = False)
+    UM.saveUsers(users, userFilename, force = True) # Force overwrite
     users = UM.loadUsers(userFilename)
 
     articlesFilename = os.path.join(
@@ -565,8 +568,9 @@ if __name__ == '__main__':
         ArticleGroups=ArticleGroups,
         FeatureFunc=featureUniform,
         argv={'l2_limit': 1})
-    # articles = AM.simulateArticlePool()
+    articles = AM.simulateArticlePool()
     # AM.saveArticles(articles, articlesFilename, force=False)
+    AM.saveArticles(articles, articlesFilename, force=True) # Force overwrite
     articles = AM.loadArticles(articlesFilename)
 
     #PCA
@@ -640,7 +644,7 @@ if __name__ == '__main__':
             alpha=alpha,
             lambda_=lambda_,
             userFeatureList=simExperiment.generateUserFeature(
-                simExperiment.getW()))
+                simExperiment.getW(), int(context_dimension)))
     if args.alg == 'UCBPMF':
         algorithms['UCBPMF'] = UCBPMFAlgorithm(
             dimension=10,
@@ -662,7 +666,8 @@ if __name__ == '__main__':
             W=simExperiment.getW(),
             init='random',
             window_size=-1)
-        algorithms['LinUCB'] = N_LinUCBAlgorithm(
+        #algorithms['LinUCB'] = N_LinUCBAlgorithm(
+        algorithms['LinUCB'] = LinUCB_SelectUserAlgorithm(
             dimension=context_dimension,
             alpha=alpha,
             lambda_=lambda_,
@@ -719,7 +724,7 @@ if __name__ == '__main__':
             alpha=alpha,
             lambda_=lambda_,
             userFeatureList=simExperiment.generateUserFeature(
-                simExperiment.getW()))
+                simExperiment.getW(), int(context_dimension)))
         algorithms['UCBPMF'] = UCBPMFAlgorithm(
             dimension=10,
             n=n_users,

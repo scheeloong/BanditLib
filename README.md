@@ -4,6 +4,7 @@ This repo contains the implementation of serveral contextual bandits algorithm, 
 ##Usage
 Run the simulator: `python Simulation.py --alg XXX` where parameter alg represents the name of algorithm. 
 
+
 Run with different parameters: `python Simulation.py --alg XXX --contextdim XX --userNum XX --Sparsity XX --NoiseScale XX --matrixNoise  XX --hiddendim XX` 
 where 
 `--contextdim` stands for dimension of contextual features;
@@ -17,7 +18,7 @@ Run the simulator for r2bandit: `python Simulation_r2bandit.py --alg all --Noise
 in which
 `--NoiseScale` stands for standard derivation of gaussian noise in environment's feedback to algorithm;
 `--userNum` stands for the number of users simulated in the simulator. Each user is associated with two sets of preference parameters (one set of parameter controls immediate click and another controls user's return time), which are known to the environment but not to the algorithms. In simulator, we can choose to simulate users every time we run the program or simulate users once, save it to 'Simulation_MAB_files', and keep using it.
-`--ReturnThreshold` stands for the thershold to define whether a user return or not (defined as tau in the paper [4])
+`--ReturnThreshold` stands for the threshold to define whether a user return or not (defined as tau in the paper [4])
 `--FutureWeight`stands for weight on the potential future clicks. If this parameter is not specificed, the algorithm will use an auto-computed weight (see the difference between r2bandit and naive-r2bandit).
 
 For example:
