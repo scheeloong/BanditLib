@@ -1,6 +1,6 @@
 #python Simulation.py --alg LinUCB  
-#python Simulation.py --alg PTS
-python Simulation.py --alg factorUCB 
+python Simulation.py --alg PTS
+#python Simulation.py --alg factorUCB 
 #This repo contains the implementation of serveral contextual bandits algorithm, including CoLin, hLinUCB, factorUCB, GOB.Lin, LinUCB, HybridLinUCB, PTS, and UCBPMF. CoLin, hLinUCB and factorUCB are our proposed algorithms published in [1], [2], [3], [4].
 # Below has error!
 #python Simulation.py --alg CoLin

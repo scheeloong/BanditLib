@@ -4,7 +4,6 @@ This repo contains the implementation of serveral contextual bandits algorithm, 
 ##Usage
 Run the simulator: `python Simulation.py --alg XXX` where parameter alg represents the name of algorithm. 
 
-
 Run with different parameters: `python Simulation.py --alg XXX --contextdim XX --userNum XX --Sparsity XX --NoiseScale XX --matrixNoise  XX --hiddendim XX` 
 where 
 `--contextdim` stands for dimension of contextual features;
