@@ -27,6 +27,7 @@ from lib.GOBLin import GOBLinAlgorithm
 
 class simulateOnlineData(object):
     '''
+    This class simulates online data for evaluation
     '''
     def __init__(self,
                  context_dimension,
@@ -40,7 +41,7 @@ class simulateOnlineData(object):
                  batchSize=1000,
                  noise=lambda: 0,
                  matrixNoise=lambda: 0,
-                 type_='UniformTheta',
+                 type_='UniformTheta', # Uniform Distribution
                  signature='',
                  poolArticleSize=10,
                  NoiseScale=0,
@@ -77,7 +78,6 @@ class simulateOnlineData(object):
 
     def constructGraph(self):
         n = len(self.users)
-
         G = np.zeros(shape=(n, n))
         for ui in self.users:
             for uj in self.users:
@@ -86,34 +86,31 @@ class simulateOnlineData(object):
         return G
 
     def constructAdjMatrix(self, m):
+        '''
+        Construct Adjacency Matrix
+        '''
         n = len(self.users)
-
         G = self.constructGraph()
         W = np.zeros(shape=(n, n))
         W0 = np.zeros(shape=(n, n))  # corrupt version of W
         for ui in self.users:
             for uj in self.users:
                 W[ui.id][uj.id] = G[ui.id][uj.id]
-                sim = W[ui.id][uj.id] + self.matrixNoise(
-                )  # corrupt W with noise
+                sim = W[ui.id][uj.id] + self.matrixNoise()  # corrupt W with noise
                 if sim < 0:
                     sim = 0
                 W0[ui.id][uj.id] = sim
-
             # find out the top M similar users in G
             if m > 0 and m < n:
                 similarity = sorted(G[ui.id], reverse=True)
                 threshold = similarity[m]
-
                 # trim the graph
                 for i in range(n):
                     if G[ui.id][i] <= threshold:
                         W[ui.id][i] = 0
                         W0[ui.id][i] = 0
-
             W[ui.id] /= sum(W[ui.id])
             W0[ui.id] /= sum(W0[ui.id])
-
         return [W, W0]
 
     def constructLaplacianMatrix(self, W, Gepsilon):
@@ -494,8 +491,10 @@ if __name__ == '__main__':
         help=
         'Select a specific algorithm, could be CoLin, hLinUCB, factorUCB, LinUCB, etc.'
     )
+
     parser.add_argument(
         '--contextdim', type=int, help='Set dimension of context features.')
+
     parser.add_argument(
         '--hiddendim', type=int, help='Set dimension of hidden features.')
 
@@ -506,20 +505,21 @@ if __name__ == '__main__':
         context_dimension = args.contextdim
     else:
         context_dimension = 10
+
     if args.hiddendim:
         latent_dimension = args.hiddendim
     else:
         latent_dimension = 0
 
+    # Set train and test iterations
     training_iterations = 0
     testing_iterations = 300
 
-    NoiseScale = .01
-
-    alpha = 0.3
+    NoiseScale = 0.01 # 
+    alpha = 0.3 # 
     lambda_ = 0.1  # Initialize A
     epsilon = 0  # initialize W
-    eta_ = 0.5
+    eta_ = 0.5 # 
 
     n_articles = 1000
     ArticleGroups = 5
@@ -539,12 +539,13 @@ if __name__ == '__main__':
     G_lambda_ = lambda_
     Gepsilon = 1
 
+    # Filename to save to if first run or read from.
     userFilename = os.path.join(
         sim_files_folder, "users_" + str(n_users) + "context_" +
         str(context_dimension) + "latent_" + str(latent_dimension) + "Ugroups"
         + str(UserGroups) + ".json")
 
-    #"Run if there is no such file with these settings; if file already exist then comment out the below funciton"
+    #"Run if there is no such file with these settings; if file already exist then comment out the below function"
     # we can choose to simulate users every time we run the program or simulate users once, save it to 'sim_files_folder', and keep using it.
     UM = UserManager(
         context_dimension + latent_dimension,
