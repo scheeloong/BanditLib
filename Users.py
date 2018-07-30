@@ -21,11 +21,11 @@ class UserManager():
     def __init__(self, dimension, userNum, UserGroups, thetaFunc, argv=None):
         '''
         '''
-        self.dimension = dimension # 
-        self.thetaFunc = thetaFunc # 
+        self.dimension = dimension # contextDim + latentDim
+        self.thetaFunc = thetaFunc # featureUniform
         self.userNum = userNum # Number of users
         self.UserGroups = UserGroups # The different possible user groups
-        self.argv = argv
+        self.argv = argv 
         self.signature = "A-" + "+PA" + "+TF-" + self.thetaFunc.__name__
 
     def saveUsers(self, users, filename, force=False):
@@ -58,30 +58,39 @@ class UserManager():
         '''
         '''
         mask = {}
+        # Generate a mask for each group
         for i in range(self.UserGroups):
+            # Randomly return integers of values 0, 1 with size dimension
             mask[i] = np.random.randint(2, size=self.dimension)
         return mask
 
     def simulateThetafromUsers(self):
         '''
         '''
+
         usersids = {}
         users = []
         mask = self.generateMasks()
         if (self.UserGroups == 0):
+            # Randomly initialize parameters for each user using the thetaFunc
             for key in range(self.userNum):
                 thetaVector = self.thetaFunc(self.dimension, argv=self.argv)
                 l2_norm = np.linalg.norm(thetaVector, ord=2)
                 users.append(User(key, thetaVector / l2_norm))
         else:
             for i in range(self.UserGroups):
+                # Separate all the users into each user group
                 usersids[i] = range(self.userNum * i / self.UserGroups,
                                     (self.userNum * (i + 1)) / self.UserGroups)
 
+                # Update the paramaters based on the mask
                 for key in usersids[i]:
                     thetaVector = np.multiply(
                         self.thetaFunc(self.dimension, argv=self.argv),
                         mask[i])
+                    # Renormalized
                     l2_norm = np.linalg.norm(thetaVector, ord=2)
+                    # Create that user and add it to the list of users
                     users.append(User(key, thetaVector / l2_norm))
+        # Return all users
         return users

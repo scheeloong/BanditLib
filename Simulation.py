@@ -484,6 +484,10 @@ def pca_articles(articles, order):
 
 
 if __name__ == '__main__':
+    # Parse
+    # i) Algorithm to run
+    # ii) Context Dimension
+    # iii) Hidden Features dimension (for hLinUCB)
     parser = argparse.ArgumentParser(description='')
     parser.add_argument(
         '--alg',
@@ -539,29 +543,42 @@ if __name__ == '__main__':
     G_lambda_ = lambda_
     Gepsilon = 1
 
+    #-----------------------------------------------------------------------------------------------------------------------
+    # Generate simulated users dataset
+    #-----------------------------------------------------------------------------------------------------------------------
     # Filename to save to if first run or read from.
     userFilename = os.path.join(
         sim_files_folder, "users_" + str(n_users) + "context_" +
         str(context_dimension) + "latent_" + str(latent_dimension) + "Ugroups"
         + str(UserGroups) + ".json")
 
-    #"Run if there is no such file with these settings; if file already exist then comment out the below function"
-    # we can choose to simulate users every time we run the program or simulate users once, save it to 'sim_files_folder', and keep using it.
+    # Run if there is no such file with these settings
+    # if file already exist then comment out the below function
+    # We can choose to simulate users every time we run the program or simulate users once, 
+    # save it to 'sim_files_folder', and keep using it.
     UM = UserManager(
         context_dimension + latent_dimension,
-        n_users,
-        UserGroups=UserGroups,
-        thetaFunc=featureUniform,
+        n_users, # 10
+        UserGroups=UserGroups, # 5 =>  10/5 = 2 => 2 users per group
+        thetaFunc=featureUniform, # initialization function for your parameters is uniform
         argv={'l2_limit': 1})
+    # Get the users from simulation with the mask and user groups
     users = UM.simulateThetafromUsers()
-    #UM.saveUsers(users, userFilename, force = False)
-    UM.saveUsers(users, userFilename, force = True) # Force overwrite
-    users = UM.loadUsers(userFilename)
 
+    # Save the simulated users onto the file
+    UM.saveUsers(users, userFilename, force = True) # Force overwrite the simulated users.
+    #UM.saveUsers(users, userFilename, force = False) # Don't overwrite if the file already exist
+
+    # Load from the saved file
+    users = UM.loadUsers(userFilename)
     articlesFilename = os.path.join(
         sim_files_folder, "articles_" + str(n_articles) + "context_" +
         str(context_dimension) + "latent_" + str(latent_dimension) + "Agroups"
         + str(ArticleGroups) + ".json")
+    #-----------------------------------------------------------------------------------------------------------------------
+    # Generate simulated articles dataset
+    #-----------------------------------------------------------------------------------------------------------------------
+    # Similarly, generate the possible articles and their context dimensions
     # Similarly, we can choose to simulate articles every time we run the program or simulate articles once, save it to 'sim_files_folder', and keep using it.
     AM = ArticleManager(
         context_dimension + latent_dimension,
@@ -569,12 +586,15 @@ if __name__ == '__main__':
         ArticleGroups=ArticleGroups,
         FeatureFunc=featureUniform,
         argv={'l2_limit': 1})
+
+
     articles = AM.simulateArticlePool()
     # AM.saveArticles(articles, articlesFilename, force=False)
     AM.saveArticles(articles, articlesFilename, force=True) # Force overwrite
     articles = AM.loadArticles(articlesFilename)
+    #-----------------------------------------------------------------------------------------------------------------------
 
-    #PCA
+    # PCA
     pca_articles(articles, 'random')
 
     for i in range(len(articles)):

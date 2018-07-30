@@ -17,6 +17,7 @@ def getPoolArticleArr(pool_articles):
 
 def gaussianFeature(dimension, argv):
     '''
+    Initialize parameters with gaussian distribution with mean 0 or standard deviation of 1
     '''
     mean = argv['mean'] if 'mean' in argv else 0
     std = argv['std'] if 'std' in argv else 1
@@ -38,10 +39,13 @@ def gaussianFeature(dimension, argv):
 
 def featureUniform(dimension, argv=None):
     '''
+    Initialize parameters with uniform distribution
     '''
+    # Get a random number with dimension size
     vector = np.array([random() for _ in range(dimension)])
     l2_norm = np.linalg.norm(vector, ord=2)
     vector = vector / l2_norm
+    # Normalize the vector such that it sums to 1 in l2Norm sense
     return vector
 
 
