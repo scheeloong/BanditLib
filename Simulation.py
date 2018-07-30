@@ -595,18 +595,22 @@ if __name__ == '__main__':
     #-----------------------------------------------------------------------------------------------------------------------
 
     # PCA
+    # Perform PCA on articles 
+    # and randomly assign articles to each feature vector
+    # (e.g. The first article wouldn't be the principal feature vector with largest difference)
     pca_articles(articles, 'random')
 
     for i in range(len(articles)):
         articles[i].contextFeatureVector = articles[
             i].featureVector[:context_dimension]
 
+    # 
     simExperiment = simulateOnlineData(
         context_dimension=context_dimension,
         latent_dimension=latent_dimension,
-        training_iterations=training_iterations,
-        testing_iterations=testing_iterations,
-        testing_method="online",  # batch or online
+        training_iterations=training_iterations, # Number of training iterations to initialize parameters
+        testing_iterations=testing_iterations, # Number of test iterations to evaluate model
+        testing_method="online",  # batch or online 
         plot=True,
         articles=articles,
         users=users,
@@ -623,6 +627,7 @@ if __name__ == '__main__':
 
     print "Starting for ", simExperiment.simulation_signature
 
+    # Dictionary to algorithm objects
     algorithms = {}
 
     if algName == 'LinUCB':
@@ -772,4 +777,5 @@ if __name__ == '__main__':
             init='zero',
             window_size=-1)
 
+    # Pass all different algorithms to the simulation to be run
     simExperiment.runAlgorithms(algorithms)
