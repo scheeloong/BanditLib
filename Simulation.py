@@ -77,12 +77,14 @@ class simulateOnlineData(object):
         self.GW = self.constructLaplacianMatrix(W, Gepsilon)
 
     def constructGraph(self):
+        # Number of nodes is number of users
         n = len(self.users)
+        # Initialize adjacency matrix graph for user-user similarity
         G = np.zeros(shape=(n, n))
         for ui in self.users:
             for uj in self.users:
-                G[ui.id][uj.id] = np.dot(ui.theta,
-                                         uj.theta)  # is dot product sufficient
+                # Similarity between each user is the dot product of their parameters
+                G[ui.id][uj.id] = np.dot(ui.theta, uj.theta)  
         return G
 
     def constructAdjMatrix(self, m):
@@ -90,15 +92,20 @@ class simulateOnlineData(object):
         Construct Adjacency Matrix
         '''
         n = len(self.users)
+        # Construct adjacacency matrix graph in terms of number of users
         G = self.constructGraph()
         W = np.zeros(shape=(n, n))
         W0 = np.zeros(shape=(n, n))  # corrupt version of W
         for ui in self.users:
             for uj in self.users:
+                # Initialize weights of graph
                 W[ui.id][uj.id] = G[ui.id][uj.id]
+                # Perturb them with noise
                 sim = W[ui.id][uj.id] + self.matrixNoise()  # corrupt W with noise
+                # Needs to be non-negative
                 if sim < 0:
                     sim = 0
+                # Update the weights with noise
                 W0[ui.id][uj.id] = sim
             # find out the top M similar users in G
             if m > 0 and m < n:
@@ -152,11 +159,15 @@ class simulateOnlineData(object):
         return result
 
     def CoTheta(self):
+        '''
+        Calculate the parameters shared between different user for every user
+        '''
         for ui in self.users:
             ui.CoTheta = np.zeros(self.context_dimension +
                                   self.latent_dimension)
             for uj in self.users:
                 ui.CoTheta += self.W[uj.id][ui.id] * np.asarray(uj.theta)
+            # Print each user with their cotheta values
             print 'Users', ui.id, 'CoTheta', ui.CoTheta
 
     def batchRecord(self, iter_):
@@ -172,6 +183,9 @@ class simulateOnlineData(object):
         return np.dot(user.CoTheta, pickedArticle.featureVector)
 
     def GetOptimalReward(self, user, articlePool):
+        '''
+        Get max reward from all articles in the current pool
+        '''
         maxReward = float('-inf')
         maxx = None
         for x in articlePool:
@@ -185,16 +199,26 @@ class simulateOnlineData(object):
         return np.linalg.norm(x - y)  # L2 norm
 
     def runAlgorithms(self, algorithms):
+        '''
+        Main function for running each algorithm on the simulation
+        Around 300 lines
+        '''
+        # Record Time
         self.startTime = datetime.datetime.now()
         timeRun = self.startTime.strftime('_%m_%d_%H_%M')
-        filenameWriteRegret = os.path.join(save_address,
-                                           'AccRegret' + timeRun + '.csv')
-        filenameWritePara = os.path.join(
-            save_address, 'ParameterEstimation' + timeRun + '.csv')
-
+        #---------------------------------------------
+        # Files to save results run
+        #---------------------------------------------
+        # Save the regret values and parameter update values to a CSV file
+        # Accumulated Regret
+        filenameWriteRegret = os.path.join(save_address, 'AccRegret' + timeRun + '.csv')
+        # Parameter estimation
+        filenameWritePara = os.path.join(save_address, 'ParameterEstimation' + timeRun + '.csv')
+        #---------------------------------------------
+        # Dictionary to store values
+        #---------------------------------------------
         # compute co-theta for every user
         self.CoTheta()
-
         tim_ = []
         BatchCumlateRegret = {}
         AlgRegret = {}
@@ -205,7 +229,6 @@ class simulateOnlineData(object):
         CoThetaVDiffList = {}
         RDiffList = {}
         RVDiffList = {}
-
         ThetaDiff = {}
         CoThetaDiff = {}
         WDiff = {}
@@ -213,10 +236,10 @@ class simulateOnlineData(object):
         CoThetaVDiff = {}
         RDiff = {}
         RVDiff = {}
-
         Var = {}
-
+        #---------------------------------------------
         # Initialization
+        #---------------------------------------------
         userSize = len(self.users)
         for alg_name, alg in algorithms.items():
             AlgRegret[alg_name] = []
@@ -233,13 +256,11 @@ class simulateOnlineData(object):
                 RVDiffList[alg_name] = []
                 RDiffList[alg_name] = []
             Var[alg_name] = []
-
         with open(filenameWriteRegret, 'w') as f:
             f.write('Time(Iteration)')
             f.write(',' + ','.join(
                 [str(alg_name) for alg_name in algorithms.iterkeys()]))
             f.write('\n')
-
         with open(filenameWritePara, 'w') as f:
             f.write('Time(Iteration)')
             f.write(',' + ','.join([
@@ -263,24 +284,28 @@ class simulateOnlineData(object):
             f.write(',' + ','.join(
                 [str(alg_name) + 'RV' for alg_name in RVDiffList.iterkeys()]))
             f.write('\n')
-
         # Training
         shuffle(self.articles)
+        # Training iteration is 0 for original simulation
         for iter_ in range(self.training_iterations):
+            # Get current article
             article = self.articles[iter_]
             for u in self.users:
+                # For every user
                 noise = self.noise()
+                # Get reward for this article, based on dot product of user feature and this article
                 reward = self.getReward(u, article)
                 reward += noise
                 for alg_name, alg in algorithms.items():
-                    alg.updateParameters(article, reward, u.id)
-
+                    # Update parameters for that user
+                    alg.updateParameters(article, reward, u.id) # Keep updating parameters for a given user
             if 'syncCoLinUCB' in algorithms:
+                # Special update algorithm for syncCoLinUCB
                 algorithms['syncCoLinUCB'].LateUpdate()
-
-        #Testing
+        # Testing (Evaluation)
         for iter_ in range(self.testing_iterations):
             # prepare to record theta estimation error
+            # Initialize all the differences in estimation
             for alg_name, alg in algorithms.items():
                 if alg.CanEstimateUserPreference:
                     ThetaDiff[alg_name] = 0
@@ -294,29 +319,28 @@ class simulateOnlineData(object):
                     RVDiff[alg_name] = 0
                 RDiff[alg_name] = 0
 
+            # For each user
             for u in self.users:
-
                 self.regulateArticlePool()  # select random articles
-
                 noise = self.noise()
-                #get optimal reward for user x at time t
-                OptimalReward, OptimalArticle = self.GetOptimalReward(
-                    u, self.articlePool)
+                # get optimal reward for user x at time t based on all the available articles
+                # Optimal reward is the dot product of the user and that article
+                # The user parameters were assumed to be true for calculating optimal reward
+                # but not used during training or prediction
+                # It uses the hidden 'latent' parameters
+                OptimalReward, OptimalArticle = self.GetOptimalReward(u, self.articlePool)
                 OptimalReward += noise
-
                 for alg_name, alg in algorithms.items():
                     pickedArticle = alg.decide(self.articlePool, u.id)
                     reward = self.getReward(u, pickedArticle) + noise
-                    if (self.testing_method == "online"
-                        ):  # for batch test, do not update while testing
+                    if (self.testing_method == "online"):  # for batch test, do not update while testing
+                        # Only update parameters based on the reward from the picked articles
                         alg.updateParameters(pickedArticle, reward, u.id)
                         if alg_name == 'CLUB':
-                            n_components = alg.updateGraphClusters(
-                                u.id, 'False')
-
+                            n_components = alg.updateGraphClusters(u.id, 'False')
+                    # However, calculate regret with respect to what the optimal reward should have been
                     regret = OptimalReward - reward
                     AlgRegret[alg_name].append(regret)
-
                     if u.id == 0:
                         if alg_name in [
                                 'LBFGS_random', 'LBFGS_random_around',
@@ -324,7 +348,6 @@ class simulateOnlineData(object):
                         ]:
                             means, vars = alg.getProb(self.articlePool, u.id)
                             Var[alg_name].append(vars[0])
-
                     #update parameter estimation record
                     if alg.CanEstimateUserPreference:
                         ThetaDiff[alg_name] += self.getL2Diff(
@@ -354,7 +377,6 @@ class simulateOnlineData(object):
                             u.id).dot(alg.getV(pickedArticle.id))
             if 'syncCoLinUCB' in algorithms:
                 algorithms['syncCoLinUCB'].LateUpdate()
-
             for alg_name, alg in algorithms.items():
                 if alg.CanEstimateUserPreference:
                     ThetaDiffList[alg_name] += [ThetaDiff[alg_name] / userSize]
@@ -377,7 +399,6 @@ class simulateOnlineData(object):
                 for alg_name in algorithms.iterkeys():
                     BatchCumlateRegret[alg_name].append(
                         sum(AlgRegret[alg_name]))
-
                 with open(filenameWriteRegret, 'a+') as f:
                     f.write(str(iter_))
                     f.write(',' + ','.join([
@@ -416,7 +437,6 @@ class simulateOnlineData(object):
                         for alg_name in RDiffList.iterkeys()
                     ]))
                     f.write('\n')
-
         if (self.plot == True):  # only plot
             # plot the results
             f, axa = plt.subplots(1, sharex=True)
@@ -428,7 +448,6 @@ class simulateOnlineData(object):
             axa.set_ylabel("Regret")
             axa.set_title("Accumulated Regret")
             plt.show()
-
             # plot the estimation error of co-theta
             f, axa = plt.subplots(1, sharex=True)
             time = range(self.testing_iterations)
@@ -454,12 +473,10 @@ class simulateOnlineData(object):
             axa.set_yscale('log')
             axa.set_title("Parameter estimation error")
             plt.show()
-
         finalRegret = {}
         for alg_name in algorithms.iterkeys():
             finalRegret[alg_name] = BatchCumlateRegret[alg_name][:-1]
         return finalRegret
-
 
 def pca_articles(articles, order):
     X = []
@@ -620,7 +637,7 @@ if __name__ == '__main__':
         type_="UniformTheta",
         signature=AM.signature,
         sparseLevel=sparseLevel,
-        poolArticleSize=poolSize,
+        poolArticleSize=poolSize, # number of articles to sample at each test iteration
         NoiseScale=NoiseScale,
         epsilon=epsilon,
         Gepsilon=Gepsilon)

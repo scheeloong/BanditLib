@@ -142,8 +142,7 @@ class LinUCB_SelectUserAlgorithm(N_LinUCBAlgorithm):
 
         for x in pool_articles:
             for user in AllUsers:
-                x_pta = self.users[user.id].getProb(
-                    self.alpha, x.contextFeatureVector[:self.dimension])
+                x_pta = self.users[user.id].getProb(self.alpha, x.contextFeatureVector[:self.dimension])
                 # pick article with highest Prob
                 if maxPTA < x_pta:
                     articlePicked = x
@@ -245,6 +244,7 @@ class Hybrid_LinUCBAlgorithm(object):
         self.CanEstimateV = False
 
     def decide(self, pool_articles, userID):
+        # Decide which arm to pull
         maxPTA = float('-inf')
         articlePicked = None
 

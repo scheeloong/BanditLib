@@ -11,8 +11,8 @@ class User():
     '''
     def __init__(self, id, theta=None, CoTheta=None):
         self.id = id # Unique id for this user
-        self.theta = theta # parameter for this user
-        self.CoTheta = CoTheta # Shared parameter for this user
+        self.theta = theta # parameter for this user, used during prediction and training
+        self.CoTheta = CoTheta # True parameters for this user to predict, used for calculating optimal reward
 
 class UserManager():
     '''
